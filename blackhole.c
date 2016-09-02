@@ -13,6 +13,7 @@
 #include "domain.h"
 #include "mymalloc.h"
 #include "endrun.h"
+#include "fof.h"
 /*! \file blackhole.c
  *  \brief routines for gas accretion onto black holes, and black hole mergers
  */
@@ -103,6 +104,7 @@ static double blackhole_soundspeed(double entropy, double pressure, double rho) 
 
 void blackhole_accretion(void)
 {
+    if(!All.BlackHoleOn) return;
     int i, n, bin;
     int Ntot_gas_swallowed, Ntot_BH_swallowed;
 
@@ -216,6 +218,13 @@ void blackhole_accretion(void)
         fflush(FdBlackHoles);
     }
 
+    /* this will find new black hole seed halos */
+    if(All.Time >= All.TimeNextSeedingCheck)
+    {
+        /* Seeding */
+        fof_fof(-1);
+        All.TimeNextSeedingCheck *= All.TimeBetweenSeedingSearch;
+    }
     walltime_measure("/BH");
 }
 
