@@ -54,6 +54,8 @@ void gravity_tree(void)
     double sum_costtotal, ewaldtot;
     double maxt, sumt, maxt1, sumt1, maxt2, sumt2, sumcommall, sumwaitall;
     double plb, plb_max;
+    if(!All.TreeGravOn)
+        return;
 
     TreeWalk ev[1] = {0};
 
