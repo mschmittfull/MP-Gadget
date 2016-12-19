@@ -7,7 +7,7 @@ MetalCoolFile = ../cooling_metal_UVB
 OutputList = 0.1,0.2,0.299,0.3,0.33333,0.4,0.5
 SnapshotFileBase = snapshot
 EnableAggregatedIO = 1
-Nmesh = 32
+Nmesh = 4
 
 # CPU time -limit
 	
@@ -21,7 +21,6 @@ TypeOfTimestepCriterion = 0
 
 #  Characteristics of run
 
-TimeBegin = 0.1
 TimeMax = 1.00000
 
 Omega0 = 0.2814      # Total matter density  (at z=0)

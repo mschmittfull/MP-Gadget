@@ -930,8 +930,6 @@ void InitCool(void)
         InitMetalCooling();
     }
 
-    set_global_time(All.TimeBegin);
-    IonizeParams();
     InitUVF();
 }
 

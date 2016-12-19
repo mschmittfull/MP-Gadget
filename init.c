@@ -29,13 +29,13 @@ void init(void)
 {
     int i, j;
 
-    set_global_time(All.TimeBegin);
-
     if(RestartFlag == 3 && RestartSnapNum < 0)
     {
         if(ThisTask == 0)
             endrun(0, "Need to give the snapshot number if FOF is selected for output\n");
     }
+
+    petaio_init();
 
     if(RestartFlag >= 2 && RestartSnapNum >= 0)  {
         petaio_read_snapshot(RestartSnapNum);
@@ -52,6 +52,19 @@ void init(void)
     domain_garbage_collection();
 
     set_global_time(All.TimeBegin);
+
+    if(RestartFlag != 3 && RestartFlag != 4)
+        long_range_init();
+
+    InitCool();
+
+#if defined(SFR)
+    init_clouds();
+#endif
+
+#ifdef LIGHTCONE
+    lightcone_init();
+#endif
 
     IonizeParams();
 

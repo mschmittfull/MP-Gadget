@@ -43,29 +43,15 @@ void begrun(void)
 
     mymalloc_init(n);
     walltime_init(&All.CT);
-    petaio_init();
 
 #ifdef DEBUG
     write_pid_file();
     enable_core_dumps_and_fpu_exceptions();
 #endif
 
-    InitCool();
-
-#if defined(SFR)
-    init_clouds();
-#endif
-
-#ifdef LIGHTCONE
-    lightcone_init();
-#endif
-
     random_generator = gsl_rng_alloc(gsl_rng_ranlxd1);
 
     gsl_rng_set(random_generator, 42);	/* start-up seed */
-
-    if(RestartFlag != 3 && RestartFlag != 4)
-        long_range_init();
 
     All.TimeLastRestartFile = 0;
 
@@ -98,7 +84,6 @@ void begrun(void)
         }
     }
 #endif
-
 
     init_drift_table();
 
