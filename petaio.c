@@ -315,10 +315,8 @@ static void petaio_read_header(BigFile * bf) {
     message(0, "Total number of star particles: %018ld\n", All.TotN_star);
     message(0, "Total number of bh particles: %018ld\n", All.TotN_bh);
 
-    if(RestartFlag >= 2) {
-        All.TimeBegin = Time;
-        set_global_time(All.TimeBegin);
-    }
+    All.TimeBegin = Time;
+    set_global_time(All.TimeBegin);
 
     if(fabs(BoxSize - All.BoxSize) / All.BoxSize > 1e-6) {
         endrun(0, "BoxSize mismatch %g, snapfile has %g\n", All.BoxSize, BoxSize);
