@@ -6,9 +6,80 @@
 /*Hubble function at scale factor a, in dimensions of All.Hubble*/
 double hubble_function(double a)
 {
+    /* for compatibility only */
+    return All.Hubble * HubbleEa(a);
+}
 
+static double growth(double a);
+static double growth_int(double a, void * params);
+
+static double growth_int(double a, void * params)
+{
+    /* FIXME: taylor expand for small a */
+    if(a == 0) return 0;
+    return pow(1 / (a * HubbleEa(a)), 3);
+}
+
+double F_Omega(double a)
+{
+    return pow(OmegaA(a), 0.6);
+}
+
+static double growth(double a)
+{
+    /* NOTE that the analytic COLA growthDtemp() is 6 * pow(1 - c.OmegaM, 1.5) times growth() */
+
+    int WORKSIZE = 100000;
+
+    double result, abserr;
+    gsl_integration_workspace *workspace;
+    gsl_function F;
+
+
+    workspace = gsl_integration_workspace_alloc(WORKSIZE);
+
+    F.function = &growth_int;
+    F.params = (double[]) {All.CP.Omega0, All.CP.OmegaLambda};
+
+    gsl_integration_qag(&F, 0, a, 0, 1.0e-9, WORKSIZE, GSL_INTEG_GAUSS41, 
+            workspace, &result, &abserr);
+
+    gsl_integration_workspace_free(workspace);
+
+    return HubbleEa(a) * result;
+}
+
+double OmegaA(double a) {
+
+    /* FIXME: radiation is not there! */
+
+    return All.CP.Omega0 / (All.CP.Omega0 + a * (1 - All.CP.Omega0 - All.CP.OmegaLambda) + a * a * a * All.CP.OmegaLambda);
+}
+
+double GrowthFactor(double a) { // growth factor for LCDM
+    return growth(a) / growth(1.0);
+}
+
+double DLogGrowthFactor(double a) {
+    /* Or OmegaA^(5/9) */
+    return pow(OmegaA(a), 5.0 / 9);
+}
+
+double GrowthFactor2(double a) {
+    /* Second order growth factor */
+    /* 7 / 3. is absorbed into dx2 */
+    double d = GrowthFactor(a);
+    return d * d * pow(OmegaA(a) / OmegaA(1.0), -1.0/143.);
+}
+
+double DLogGrowthFactor2(double a) {
+    return 2 * pow(OmegaA(a), 6.0/11.);
+}
+
+double HubbleEa(double a)
+{
+    /* H(a) / H0 */
     double hubble_a;
-
     /* first do the terms in SQRT */
     hubble_a = All.CP.OmegaLambda;
 
@@ -21,52 +92,41 @@ double hubble_function(double a)
         if(!NTotal[2])
             hubble_a += All.CP.OmegaNu0 / (a * a * a * a);
     }
-
-    /* Now finish it up. */
-    hubble_a = All.Hubble * sqrt(hubble_a);
-    return (hubble_a);
+    return hubble_a;
 }
 
-static double growth(double a);
-static double growth_int(double a, void * params);
+double DHubbleEaDa(double a) {
+    /* FIXME: add radiation ! */
+    /* d E / d a*/
+    double E = HubbleEa(a);
+    return 0.5 / E * (-3 * All.CP.Omega0 / (a * a * a * a));
+}
+double D2HubbleEaDa2(double a) {
+    /* FIXME: add radiation ! */
+    double E = HubbleEa(a);
+    double dEda = DHubbleEaDa(a);
+    return - dEda * dEda / E + dEda * (-4 / a);
+}
+double DGrowthFactorDa(double a) {
+    /* FIXME: add radiation ! */
+    double E = HubbleEa(a);
 
-double GrowthFactor(double astart)
-{
-    return growth(astart) / growth(1.0);
+    double EI = growth(1.0);
+
+    double t1 = DHubbleEaDa(a) * GrowthFactor(a) / E;
+    double t2 = E * pow(a * E, -3) / EI;
+    return t1 + t2;
 }
 
-
-static double growth(double a)
-{
-    gsl_integration_workspace * w = gsl_integration_workspace_alloc (200);
-    double hubble_a;
-    double result,abserr;
-    gsl_function F;
-    F.function = &growth_int;
-
-    hubble_a = hubble_function(a);
-
-    gsl_integration_qag (&F, 0, a, 0, 1e-4,200,GSL_INTEG_GAUSS61, w,&result, &abserr);
-    //   printf("gsl_integration_qng in growth. Result %g, error: %g, intervals: %lu\n",result, abserr,w->size);
-    gsl_integration_workspace_free (w);
-    return hubble_a * result;
-}
-
-
-static double growth_int(double a, void * params)
-{
-    if(a == 0) return 0;
-    return pow(1 / (a * hubble_function(a)), 3);
-}
-
-double F_Omega(double a)
-{
-  double omega_a;
-
-    /* FIXME: radiation is not there! */
-  omega_a = All.CP.Omega0 / (All.CP.Omega0 + a * (1 - All.CP.Omega0 - All.CP.OmegaLambda) + a * a * a * All.CP.OmegaLambda);
-
-  return pow(omega_a, 0.6);
+double D2GrowthFactorDa2(double a) {
+    /* FIXME: add radiation ! */
+    double d2Eda2 = D2HubbleEaDa2(a);
+    double dEda = DHubbleEaDa(a);
+    double E = HubbleEa(a);
+    double EI = growth(1.0);
+    double t1 = d2Eda2 * GrowthFactor(a) / E;
+    double t2 = (dEda + 3 / a * E) * pow(a * E, -3) / EI;
+    return t1 - t2;
 }
 
 static double sigma2_int(double k, void * p)

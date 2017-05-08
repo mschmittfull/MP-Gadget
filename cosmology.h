@@ -34,6 +34,9 @@ double function_of_k_tophat_sigma(FunctionOfK * fk, double R);
 double hubble_function(double a);
 /* Linear theory growth factor normalized to D(a=1.0) = 1.0. */
 double GrowthFactor(double a);
+
+double HubbleEa(double a);
 double F_Omega(double a);
+double OmegaA(double a);
 
 #endif
