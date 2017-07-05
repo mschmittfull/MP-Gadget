@@ -96,11 +96,17 @@ static void density_copy(int place, TreeWalkQueryDensity * I, TreeWalk * tw);
 
 void density(void)
 {
-    if(!All.DensityOn)
-	return;
+    if(!All.DensityOn) return;
+
     TreeWalk tw[1] = {0};
 
     tw->ev_label = "DENSITY";
+
+    /* walk the active particles against all particles for Hsml*/
+    // FIXME: disabled before new scheme because this disables the drift.
+    // tw->type = TREEWALK_SPLIT;
+    // tw->bgmask = BINMASK_ALL;
+
     tw->visit = (TreeWalkVisitFunction) treewalk_visit_ngbiter;
     tw->ngbiter_type_elsize = sizeof(TreeWalkNgbIterDensity);
     tw->ngbiter = (TreeWalkNgbIterFunction) density_ngbiter;

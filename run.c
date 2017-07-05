@@ -369,13 +369,12 @@ void compute_accelerations(void)
     }
 
     grav_short_tree();		/* computes gravity accel. */
-
+    /* For the first timestep, we redo it
+     * to allow usage of relative opening
+     * criterion for consistent accuracy.
+     */
     if(All.TypeOfOpeningCriterion == 1 && All.Ti_Current == 0)
-        grav_short_tree();		/* For the first timestep, we redo it
-                             * to allow usage of relative opening
-                             * criterion for consistent accuracy.
-                             */
-
+        grav_short_tree();
 
     if(NTotal[0] > 0)
     {
@@ -390,7 +389,7 @@ void compute_accelerations(void)
         /***** hydro forces *****/
         message(0, "Start hydro-force computation...\n");
 
-        hydro_force();		/* adds hydrodynamical accelerations  and computes du/dt  */
+        hydro_force(BINMASK_ALL);		/* adds hydrodynamical accelerations  and computes du/dt  */
 
 #ifdef BLACK_HOLES
         /***** black hole accretion and feedback *****/
