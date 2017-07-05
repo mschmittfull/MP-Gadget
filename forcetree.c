@@ -206,6 +206,10 @@ int force_tree_build_single(int npart)
         for(i = 0; i < 8; i++)
             nfreep->u.suns[i] = -1;
         nfreep->hmax = 0;
+
+        nfreep->shift = 3 * (BITS_PER_DIMENSION - 1);
+        nfreep->morton = MORTON(nfreep->center);
+
         nfree++;
         /* create a set of empty nodes corresponding to the top-level domain
          * grid. We need to generate these nodes first to make sure that we have a
@@ -320,6 +324,8 @@ int force_tree_build_single(int npart)
             for(j = 0; j < 8; j++)
                 nfreep->u.suns[j] = -1;
             nfreep->hmax = 0;
+            nfreep->morton = MORTON(nfreep->center);
+            nfreep->shift = shift;
 
             /*Re-add the particle to the new internal node*/
             const int child_subnode = get_subnode(nfreep, this, child, shift);
@@ -398,6 +404,8 @@ void force_create_empty_nodes(int no, int topnode, int bits, int x, int y, int z
                     Nodes[*nextfree].center[0] = Nodes[no].center[0] + (2 * i - 1) * lenhalf;
                     Nodes[*nextfree].center[1] = Nodes[no].center[1] + (2 * j - 1) * lenhalf;
                     Nodes[*nextfree].center[2] = Nodes[no].center[2] + (2 * k - 1) * lenhalf;
+                    Nodes[*nextfree].morton = MORTON(Nodes[*nextfree].center);
+                    Nodes[*nextfree].shift = Nodes[no].shift - 3;
 
                     for(n = 0; n < 8; n++)
                         Nodes[*nextfree].u.suns[n] = -1;
@@ -460,6 +468,14 @@ force_get_next_node(int no)
     }
 }
 
+void
+force_remove_node(int no)
+{
+    int prev = force_get_prev_node(no);
+    int next = force_get_next_node(no);
+    force_set_next_node(prev, next);
+}
+
 int
 force_set_next_node(int no, int next)
 {
@@ -498,6 +514,75 @@ force_get_prev_node(int no)
         return 0;
     }
 }
+
+int
+force_find_enclosing_node(int i) /* enclosing node of particle i (which is off the tree)*/
+{
+    int no;
+
+    no = All.MaxPart;
+    peanokey morton = MORTON(P[i].Pos);
+
+    int deepest = no;
+
+    while(no >= 0)
+    {
+        if(no < All.MaxPart)  /* single particle */ {
+            peanokey morton_other = MORTON(P[no].Pos);
+            int father = Father[no];
+            int shift = Nodes[father].shift;
+            if (morton_other >> shift != morton >> shift) {
+                /* not in the node; might be in another child */
+                no = Nextnode[no];
+                continue;
+            } else {
+                return father;
+            }
+        }
+        if(no < All.MaxPart + MaxNodes) {
+
+            const struct NODE* current = &Nodes[no];
+
+            if(!(current->u.d.bitflags & (1 << BITFLAG_MULTIPLEPARTICLES))) {
+                /* open cell to check the only particle inside */
+                no = current->u.d.nextnode;
+                continue;
+            }
+
+            if (current->morton >> (current->shift + 3)
+             != morton >> (current->shift + 3)) {
+                /* not in the node */
+                no = current->u.d.sibling;
+                continue;
+            } else {
+                deepest = no;
+            }
+            /* ok, we need to open the node */
+            no = current->u.d.nextnode;
+            continue;
+        }
+
+    }
+
+    if (deepest == -1)
+        endrun(-1, "Father node hosting new particle is not found, domain must be bad.\n");
+
+    return deepest;
+}
+
+void
+force_insert_particle(int i)
+{
+    /* first walk the tree to find the leaf node */
+    int father = force_find_enclosing_node(i);
+    /* then insert the particle as the immediate next of it */
+    int next = force_get_next_node(father);
+
+    force_set_next_node(father, i);
+    force_set_next_node(i, next);
+    Father[i] = father;
+}
+
 /*! this routine determines the multipole moments for a given internal node
  *  and all its subnodes using a recursive computation.  The result is
  *  stored in the Nodes[] structure in the sequence of this tree-walk.
