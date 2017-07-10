@@ -23,4 +23,5 @@ extern int NTopnodes, NTopleaves;
 void domain_test_id_uniqueness();
 void domain_decompose_full(void);
 void domain_maintain(void);
+void domain_decompose_incremental(void);
 #endif
