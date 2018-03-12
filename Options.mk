@@ -21,8 +21,8 @@ GSL_LIBS = -L/usr/local/gsl-2.4/lib -lgsl -lgslcblas
 
 
 # MS
--DPETAPM_ORDER=1
--DTOPNODEFACTOR=5.0
+#-DPETAPM_ORDER=1
+#-DTOPNODEFACTOR=5.0
 
 
 #--------------------------------------- Basic operation mode of code
