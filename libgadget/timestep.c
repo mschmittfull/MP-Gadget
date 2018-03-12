@@ -32,7 +32,11 @@ static TimeSpan PM;
 
 /*Get the dti from the timebin*/
 static inline inttime_t dti_from_timebin(int bin) {
-    return bin ? (1 << bin) : 0;
+    /*return bin ? (1 << bin) : 0;*/
+    if (bin <= 0)
+        return 0;
+    else
+        return 1u << bin;
 }
 /*Flat array containing all active particles*/
 int NumActiveParticle;
