@@ -9,8 +9,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <gsl/gsl_sf_hyperg.h>
-#include "physconst.h"
-#include "cosmology.h"
+#include <libgadget/physconst.h>
+#include <libgadget/cosmology.h>
 #include "stub.h"
 
 /*Neutrinos are tested elsewhere*/
@@ -39,7 +39,7 @@ void setup_cosmology(Cosmology * CP, double Omega0, double OmegaBaryon, double H
     /*Should be 0.1*/
     CP->Hubble = HUBBLE * UnitTime_in_s;
     /*Do the main cosmology initialisation*/
-    init_cosmology(CP,0.01);
+    init_cosmology(CP,0.01, 1);
 }
 
 static inline double radgrow(double aa, double omegar) {

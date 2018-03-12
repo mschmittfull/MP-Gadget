@@ -9,11 +9,13 @@
 #include <stdio.h>
 #include <time.h>
 #include <gsl/gsl_rng.h>
-#include "forcetree.h"
-#include "allvars.h"
-#include "domain.h"
-#include "peano.c"
+
 #include "stub.h"
+
+#include <libgadget/allvars.h>
+#include <libgadget/forcetree.h>
+#include <libgadget/partmanager.h>
+#include <libgadget/domain.h>
 
 /*Defined in forcetree.c*/
 int
@@ -23,19 +25,18 @@ struct TreeBuilder
 force_treeallocate(int maxnodes, int maxpart, int first_node_offset);
 
 int
-force_update_node_recursive(int no, int sib, int tail, const struct TreeBuilder tb);
+force_update_node_parallel(const struct TreeBuilder tb);
 
 /*Used data from All and domain*/
-struct particle_data *P;
+struct part_manager_type PartManager[1] = {{0}};
 struct global_data_all_processes All;
 
 int MaxTopNodes, NTopNodes, NTopLeaves, NTask, ThisTask;
 struct topleaf_data *TopLeaves;
 struct topnode_data *TopNodes;
 struct task_data *Tasks;
-size_t AllocatedBytes;
 int NTask, ThisTask;
-int NumPart;
+double GravitySofteningTable[6];
 
 /*Dummy versions of functions that implement only what we need for the tests:
  * most of these are used in the non-tested globally accessible parts of forcetree.c and
@@ -51,7 +52,7 @@ domain_get_topleaf(const peano_t key) {
     return no;
 }
 
-void savepositions(int n, int i){}
+void dump_snapshot() { }
 
 /*End dummies*/
 
@@ -108,6 +109,7 @@ static int check_moments(const struct TreeBuilder tb, const int numpart, const i
     }
     int node = tb.firstnode;
     int counter = 0;
+    int sibcntr = 0;
     while(node >= 0) {
         assert_true(node >= -1 && node < tb.lastnode);
         int next = force_get_next_node(node,tb);
@@ -131,6 +133,9 @@ static int check_moments(const struct TreeBuilder tb, const int numpart, const i
                 assert_int_equal(ances, sfather);
 /*                 printf("node %d ances %d sib %d next %d father %d sfather %d\n",node, ances, sib, force_get_next_node(node, tb), father, sfather); */
             }
+            else if(sib == -1)
+                sibcntr++;
+
             if(!(Nodes[node].u.d.mass < 0.5 && Nodes[node].u.d.mass > -0.5)) {
                 printf("node %d (%d) mass %g / %g TL %d DLM %d MS %g MSN %d ITL %d\n", 
                     node, node - tb.firstnode, Nodes[node].u.d.mass, oldmass[node - tb.firstnode],
@@ -155,6 +160,7 @@ static int check_moments(const struct TreeBuilder tb, const int numpart, const i
         node = next;
     }
     assert_int_equal(counter, nrealnode);
+    assert(sibcntr < counter/100);
 
     free(oldmass);
     return nrealnode;
@@ -248,7 +254,7 @@ static void do_tree_test(const int numpart, const struct TreeBuilder tb)
     }
     qsort(P, numpart, sizeof(struct particle_data), order_by_type_and_key);
     int maxnode = numpart;
-    All.MaxPart = numpart;
+    PartManager->MaxPart = numpart;
     MaxNodes = numpart;
     assert_true(Nodes != NULL);
     /*So we know which nodes we have initialised*/
@@ -265,7 +271,7 @@ static void do_tree_test(const int numpart, const struct TreeBuilder tb)
     int nrealnode = check_tree(tb, nodes, numpart);
     /* now compute the multipole moments recursively */
     start = MPI_Wtime();
-    int tail = force_update_node_recursive(numpart, -1, -1, tb);
+    int tail = force_update_node_parallel(tb);
     force_set_next_node(tail, -1, tb);
 /*     assert_true(tail < nodes); */
     end = MPI_Wtime();
@@ -373,9 +379,10 @@ static int setup_tree(void **state) {
     /*Set up the important parts of the All structure.*/
     /*Particles should not be outside this*/
     All.BoxSize = 8;
+    All.NumThreads = omp_get_max_threads();
     int i;
     for(i=0; i<6; i++)
-        All.GravitySofteningTable[i] = 0.1 / 2.8;
+        GravitySofteningTable[i] = 0.1 / 2.8;
     /*Set up the top-level domain grid*/
     /* The whole tree goes into one topnode.
      * Set up just enough of the TopNode structure that
@@ -397,7 +404,6 @@ static int setup_tree(void **state) {
     Tasks = malloc(sizeof(struct task_data));
     Tasks[0].StartLeaf = 0;
     Tasks[0].EndLeaf = 1;
-    AllocatedBytes = 0;
     gsl_rng * r = gsl_rng_alloc(gsl_rng_mt19937);
     gsl_rng_set(r, 0);
     *state = (void *) r;

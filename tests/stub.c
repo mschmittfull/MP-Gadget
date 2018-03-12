@@ -9,9 +9,9 @@
 #include <math.h>
 #include <mpi.h>
 #include <cmocka.h>
-#include "mymalloc.h"
-#include "config.h"
-#include "endrun.h"
+
+#include <libgadget/config.h>
+#include <libgadget/utils.h>
 
 int ThisTask;
 int NTask;
@@ -22,6 +22,8 @@ _cmocka_run_group_tests_mpi(const char * name, const struct CMUnitTest tests[], 
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &ThisTask);
     MPI_Comm_size(MPI_COMM_WORLD, &NTask);
+
+    init_endrun();
 
     if(NTask != 1) {
         setenv("CMOCKA_TEST_ABORT", "1", 1);
