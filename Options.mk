@@ -11,7 +11,7 @@ MPICXX      = mpic++
 #MS try1
 #OPTIMIZE =  -fopenmp -O3 -g -Wall -xHost -no-prec-div -fp-model fast -wd11021
 # MS try2
-OPTIMIZE =  -fopenmp -O3 -g -Wall -ffast-math -march=native
+OPTIMIZE =  -fopenmp -O3 -g -Wall
 
 #GSL_INCL = $(shell pkg-config --cflags gsl)
 #We don't want to add -lm here on icc
@@ -21,8 +21,8 @@ GSL_LIBS = -L/usr/local/gsl-2.4/lib -lgsl -lgslcblas
 
 
 # MS
--DPETAPM_ORDER=1
--DTOPNODEFACTOR=5.0
+#-DPETAPM_ORDER=1
+#-DTOPNODEFACTOR=5.0
 
 
 #--------------------------------------- Basic operation mode of code
