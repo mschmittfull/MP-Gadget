@@ -9,9 +9,9 @@ MPICXX      = mpic++
 # Optimized defaults for icc
 #OPTIMIZE =  -fopenmp -O3 -ipo -g -Wall -xHost -no-prec-div -fp-model fast -wd11021
 #MS try1
-OPTIMIZE =  -fopenmp -O3 -g -Wall -xHost -no-prec-div -fp-model fast -wd11021
+#OPTIMIZE =  -fopenmp -O3 -g -Wall -xHost -no-prec-div -fp-model fast -wd11021
 # MS try2
-#OPTIMIZE =  -fopenmp -O3 -g -Wall -ffast-math -march=native
+OPTIMIZE =  -fopenmp -O3 -g -Wall -ffast-math -march=native
 
 #GSL_INCL = $(shell pkg-config --cflags gsl)
 #We don't want to add -lm here on icc
